@@ -1,7 +1,10 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Net.Mail;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using Server.Config;
 
 var factory = new ConnectionFactory() { HostName = "localhost" };
 using var connection = factory.CreateConnection();
@@ -27,8 +30,29 @@ consumer.Received += (model, e) =>
     var email = match.Groups[1].Value;
     var code = match.Groups[2].Value;
 
-    Console.WriteLine($"[{DateTime.UtcNow}] {email}: {code}");
+    SendMessage(email, code.ToString());
+
+    Console.WriteLine($"[{DateTime.UtcNow}] {email} код: {code}");
 };
+
+static void SendMessage(string toEMail, string code)
+{
+    var mailData = MailData.Instance;
+
+    var from = new MailAddress(mailData.Address, "no-reply-pixlpark-by-matvey");
+    var to = new MailAddress(toEMail);
+    var message = new MailMessage(from, to);
+    message.Body = $"Код подтверждения аккаунта Pixlpark: {code}";
+    message.Subject = "Подтверждение аккаунта Pixlpark";
+
+    var smtpClient = new SmtpClient(mailData.SMTP, mailData.Port)
+    {
+        Credentials = new NetworkCredential(mailData.Address, mailData.Password),
+        EnableSsl = true
+    };
+
+    smtpClient.Send(message);
+}
 
 channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
 Console.ReadLine();

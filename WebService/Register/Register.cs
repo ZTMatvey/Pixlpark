@@ -13,6 +13,7 @@ namespace WebService.Register
 
         private static readonly IConnection s_connection;
         private static readonly IModel s_channel;
+        private static readonly List<Tuple<string, string>> _pairs = new List<Tuple<string, string>>();
 
         static Register()
         {
@@ -25,36 +26,17 @@ namespace WebService.Register
 
         public static IResult New(NewDto newDto)
         {
+            if (_pairs.Any(e => e.Item1 == newDto.EMail)) return TypedResults.Ok(new Response() { success = 1 });
+
             if (!CheckEMail(newDto?.EMail ?? string.Empty)) return TypedResults.StatusCode(400);
 
             var code = Random.Shared.Next(10_000, 99_999);
             var message = $"{newDto!.EMail}|{code}";
             var body = Encoding.UTF8.GetBytes(message);
 
-            SendMessage(newDto!.EMail, code.ToString());
-
             s_channel.BasicPublish(exchange: "dev-pixlpark-ex", routingKey: "code", body: body);
 
-            return TypedResults.Ok(new Response() { success = 1});
-        }
-
-        private static void SendMessage(string toEMail, string code)
-        {
-            var mailData = MailData.Instance;
-
-            var from = new MailAddress(mailData.Address, "no-reply-pixlpark-by-matvey");
-            var to = new MailAddress(toEMail);
-            var message = new MailMessage(from, to);
-            message.Body = $"Код подтверждения аккаунта Pixlpark: {code}";
-            message.Subject = "Подтверждение акканта Pixlpark";
-
-            var smtpClient = new SmtpClient(mailData.SMTP, mailData.Port)
-            {
-                Credentials = new NetworkCredential(mailData.Address, mailData.Password),
-                EnableSsl = true
-            };
-
-            smtpClient.Send(message);
+            return TypedResults.Ok(new Response() { success = 1 });
         }
 
         private static bool CheckEMail(string email)

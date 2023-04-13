@@ -1,4 +1,4 @@
-﻿namespace WebService.Config
+﻿namespace Server.Config
 {
     public sealed class MailData
     {
