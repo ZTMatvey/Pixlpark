@@ -46,7 +46,7 @@ namespace WebService.Register
             var to = new MailAddress(toEMail);
             var message = new MailMessage(from, to);
             message.Body = $"Код подтверждения аккаунта Pixlpark: {code}";
-            message.Subject = "Подтверждения акканта Pixlpark";
+            message.Subject = "Подтверждение акканта Pixlpark";
 
             var smtpClient = new SmtpClient(mailData.SMTP, mailData.Port)
             {
