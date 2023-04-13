@@ -1,6 +1,7 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
+using System.Text.RegularExpressions;
 
 var factory = new ConnectionFactory() { HostName = "localhost" };
 using var connection = factory.CreateConnection();
@@ -19,7 +20,14 @@ consumer.Received += (model, e) =>
 {
     var body = e.Body.ToArray();
     var message = Encoding.UTF8.GetString(body);
-    Console.WriteLine($"[{DateTime.UtcNow}] {message}");
+
+    var match = Regex.Match(message, "(.+)\\|(.+)");
+    if (match.Groups.Count < 3) return;
+
+    var email = match.Groups[1].Value;
+    var code = match.Groups[2].Value;
+
+    Console.WriteLine($"[{DateTime.UtcNow}] {email}: {code}");
 };
 
 channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);

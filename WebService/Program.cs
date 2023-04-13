@@ -1,32 +1,18 @@
+using RabbitMQ.Client;
+using System.Text;
+using System.Threading.Channels;
+using WebService.Config;
+using WebService.Register;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 var app = builder.Build();
+var fromMailData = app.Configuration.GetSection("FromMailData");
+var mailData = MailData.Instance;
+fromMailData.Bind(mailData);
 
-// Configure the HTTP request pipeline.
+app.MapPost("/register/new", (NewDto newDto) => Register.New(newDto));
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-});
+app.Lifetime.ApplicationStopping.Register(Register.Dispose);
 
 app.Run();
-
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
