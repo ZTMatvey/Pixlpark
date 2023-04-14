@@ -21,6 +21,7 @@ app.UseCors(builder =>
 app.UseHttpsRedirection();
 
 app.MapPost("/register/new", (NewDto newDto) => Register.New(newDto));
+app.MapPost("/register/Activate", (CodeDto codeDto) => Register.Activate(codeDto));
 
 app.Lifetime.ApplicationStopping.Register(Register.Dispose);
 

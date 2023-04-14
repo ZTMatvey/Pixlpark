@@ -13,9 +13,14 @@ using var channel = connection.CreateModel();
 channel.ExchangeDeclare("dev-pixlpark-ex", ExchangeType.Direct);
 var queueName = channel.QueueDeclare(durable: false, exclusive: false).QueueName;
 
-channel.QueueBind(queue: queueName,
-    exchange: "dev-pixlpark-ex",
-    routingKey: "code");
+channel.QueueBind(queue: queueName, exchange: "dev-pixlpark-ex", routingKey: "code");
+
+var mailData = MailData.Instance;
+mailData.SMTP = "smtp.gmail.com";
+mailData.Port = 587;
+mailData.Address = "radchenkom864@gmail.com";
+mailData.Password = "clbcuoaoxhpzurks";
+SendMessage("zenoteper@icloud.com", "123");
 
 var consumer = new EventingBasicConsumer(channel);
 
@@ -30,9 +35,9 @@ consumer.Received += (model, e) =>
     var email = match.Groups[1].Value;
     var code = match.Groups[2].Value;
 
-    SendMessage(email, code.ToString());
+    Console.WriteLine($"[{DateTime.UtcNow}] {email} code: {code}");
 
-    Console.WriteLine($"[{DateTime.UtcNow}] {email} код: {code}");
+    SendMessage(email, code.ToString());
 };
 
 static void SendMessage(string toEMail, string code)
@@ -41,15 +46,13 @@ static void SendMessage(string toEMail, string code)
 
     var from = new MailAddress(mailData.Address, "no-reply-pixlpark-by-matvey");
     var to = new MailAddress(toEMail);
-    var message = new MailMessage(from, to);
+    using var message = new MailMessage(from, to);
     message.Body = $"Код подтверждения аккаунта Pixlpark: {code}";
     message.Subject = "Подтверждение аккаунта Pixlpark";
 
-    var smtpClient = new SmtpClient(mailData.SMTP, mailData.Port)
-    {
-        Credentials = new NetworkCredential(mailData.Address, mailData.Password),
-        EnableSsl = true
-    };
+    using var smtpClient = new SmtpClient(mailData.SMTP, mailData.Port);
+    smtpClient.Credentials = new NetworkCredential(mailData.Address, mailData.Password);
+    smtpClient.EnableSsl = true;
 
     smtpClient.Send(message);
 }
